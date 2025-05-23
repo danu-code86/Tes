@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Neurosufi Breath App</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #0a0e17;
+      color: #e0e0e0;
+      margin: 0;
+      padding: 8px;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      min-height: calc(100vh - 16px);
+      max-width: 100%;
+      padding-bottom: 70px; /* Space for bottom tab bar */
+    }
+    .header {
+      text-align: center;
+      padding: 8px 0;
+      background: linear-gradient(135deg, #0a192f 0%, #0a0e17 100%);
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .header h1 {
+      font-size: 1.5rem;
+      margin: 0;
+      color: #64ffda;
+      font-weight: 300;
+    }
+    .progress-tracker {
+      background: rgba(15, 25, 45, 0.8);
+      padding: 8px 12px;
+      border-radius: 8px;
+      margin: 8px 0;
+      border: 1px solid rgba(100, 255, 218, 0.1);
+    }
+    .progress-container {
+      width: 100%;
+      background-color: #1a2238;
+      border-radius: 6px;
+      height: 12px;
+      overflow: hidden;
+      border: 1px solid #2d3a5a;
+      margin: 4px 0;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #64ffda, #3bb4c1);
+      border-radius: 6px;
+      width: 0%;
+      transition: width 0.5s ease;
+    }
+    .motivation-message {
+      font-size: 0.8rem;
+      text-align: center;
+      color: #50fa7b;
+      font-weight: 300;
+      min-height: 1rem;
+    }
+    .breathing-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 0;
+      min-height: 300px;
+    }
+    canvas {
+      background: radial-gradient(circle, #1a2a4a 0%, #0a0e17 100%);
+      border-radius: 50%;
+      display: block;
+      box-shadow: 0 0 30px rgba(100, 255, 218, 0.15);
+      border: 2px solid rgba(100, 255, 218, 0.1);
+      width: 55vw;
+      height: 55vw;
+      max-width: 280px;
+      max-height: 280px;
+    }
+    .phase-info {
+      text-align: center;
+      margin: 12px 0;
+    }
+    #phase {
+      font-size: 1.2rem;
+      margin-bottom: 4px;
+      color: #8be9fd;
+      font-weight: 300;
+    }
+    #counter {
+      font-size: 1rem;
+      color: #bd93f9;
+    }
+    #progress-text {
+      font-size: 0.9rem;
+      color: #50fa7b;
+      margin-top: 4px;
+      opacity: 0.85;
+    }
+    .controls {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin: 12px 0;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+      font-weight: 500;
+      min-width: 80px;
+    }
+    #startBtn {
+      background: linear-gradient(135deg, #64ffda 0%, #2ec4b6 100%);
+      color: #0a192f;
+    }
+    #pauseBtn {
+      background: linear-gradient(135deg, #ffb86c 0%, #ff9e4f 100%);
+      color: #0a192f;
+      display: none;
+    }
+    #resetBtn {
+      background: linear-gradient(135deg, #6272a4 0%, #444f75 100%);
+      color: white;
+    }
+    .settings-section {
+      background: rgba(15, 25, 45, 0.8);
+      border-radius: 8px;
+      margin: 8px 0;
+      border: 1px solid rgba(100, 255, 218, 0.1);
+      transition: all 0.3s ease;
+    }
+    .settings-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      cursor: pointer;
+      background: rgba(20, 30, 50, 0.5);
+      border-radius: 8px 8px 0 0;
+    }
+    .settings-header h2 {
+      font-size: 1rem;
+      margin: 0;
+      color: #8be9fd;
+      font-weight: 500;
+    }
+    .toggle-icon {
+      font-size: 1.2rem;
+      color: #64ffda;
+      transition: transform 0.3s ease;
+    }
+    .settings-content {
+      display: none;
+      padding: 0 12px 12px;
+    }
+    .settings-content.expanded {
+      display: block;
+    }
+    .settings-content.expanded + .settings-header .toggle-icon {
+      transform: rotate(180deg);
+    }
+    .settings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .setting-group {
+      display: flex;
+      flex-direction: column;
+    }
+    .setting-group.full-width {
+      grid-column: 1 / -1;
+    }
+    label {
+      font-size: 0.8rem;
+      color: #8be9fd;
+      margin-bottom: 4px;
+    }
+    input[type="number"] {
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #2d3a5a;
+      background: #1a2238;
+      color: white;
+      font-size: 0.9rem;
+      width: 100%;
+    }
+    .presets {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .presets button {
+      background: linear-gradient(135deg, #1e3a63, #0a1625);
+      color: #64ffda;
+      padding: 8px 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 6px;
+      border: 1px solid rgba(100, 255, 218, 0.2);
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+      min-width: 0;
+    }
+    .presets button:hover {
+      background: linear-gradient(135deg, #254b7a, #102030);
+      transform: translateY(-1px);
+    }
+    .audio-controls {
+      display: flex;
+      justify-content: center;
+      margin: 8px 0;
+    }
+    #muteBtn {
+      padding: 8px 12px;
+      background: #2d3a5a;
+      color: #8be9fd;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-height: 600px) {
+      .breathing-section {
+        min-height: 200px;
+      }
+      canvas {
+        width: 45vw;
+        height: 45vw;
+        max-width: 200px;
+        max-height: 200px;
+      }
+      .header h1 {
+        font-size: 1.2rem;
+      }
+    }
+    
+    @media (max-width: 360px) {
+      canvas {
+        width: 60vw;
+        height: 60vw;
+      }
+      .settings-grid {
+        grid-template-columns: 1fr;
+      }
+      .presets {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Bottom Tab Bar Styles */
+    .bottom-tab-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(10, 20, 40, 0.95);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(100, 255, 218, 0.1);
+      display: flex;
+      height: 60px;
+      z-index: 1000;
+    }
+    
+    .tab-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: none;
+      background: none;
+      color: #6272a4;
+    }
+    
+    .tab-item.active {
+      color: #64ffda;
+    }
+    
+    .tab-item:hover {
+      background: rgba(100, 255, 218, 0.1);
+    }
+    
+    .tab-icon {
+      font-size: 1.2rem;
+      margin-bottom: 2px;
+    }
+    
+    .tab-label {
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    /* Tab Content Styles */
+    .tab-content {
+      display: none;
+      flex: 1;
+    }
+    
+    .tab-content.active {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* Tracker Section Styles */
+    .tracker-section {
+      padding: 12px 8px;
+      text-align: center;
+    }
+    
+    .tracker-header {
+      margin-bottom: 20px;
+    }
+    
+    .tracker-header h2 {
+      font-size: 1.5rem;
+      color: #64ffda;
+      margin: 0 0 8px 0;
+      font-weight: 300;
+    }
+    
+    .tracker-subtitle {
+      color: #8be9fd;
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 20px 0;
+    }
+    
+    .stat-card {
+      background: rgba(15, 25, 45, 0.8);
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(100, 255, 218, 0.1);
+    }
+    
+    .stat-number {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #64ffda;
+      margin-bottom: 4px;
+    }
+    
+    .stat-label {
+      font-size: 0.8rem;
+      color: #8be9fd;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    /* Time Period Selector */
+    .time-period-selector {
+      display: flex;
+      justify-content: center;
+      margin: 15px 0;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    
+    .time-period-btn {
+      padding: 8px 12px;
+      background: rgba(15, 25, 45, 0.8);
+      border: 1px solid rgba(100, 255, 218, 0.1);
+      color: #8be9fd;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .time-period-btn.active {
+      background: rgba(100, 255, 218, 0.2);
+      color: #64ffda;
+      border-color: #64ffda;
+    }
+    
+    /* Session History */
+    .session-history {
+      margin-top: 20px;
+    }
+    
+    .session-history h3 {
+      color: #64ffda;
+      font-size: 1.1rem;
+      margin-bottom: 12px;
+      text-align: left;
+      padding-left: 8px;
+    }
+    
+    .session-list {
+      max-height: 200px;
+      overflow-y: auto;
+      border-radius: 8px;
+      background: rgba(15, 25, 45, 0.5);
+      border: 1px solid rgba(100, 255, 218, 0.1);
+    }
+    
+    .session-item {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(100, 255, 218, 0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .session-item:last-child {
+      border-bottom: none;
+    }
+    
+    .session-preset {
+      font-weight: 500;
+      color: #64ffda;
+    }
+    
+    .session-details {
+      display: flex;
+      gap: 10px;
+      font-size: 0.85rem;
+    }
+    
+    .session-time {
+      color: #8be9fd;
+    }
+    
+    .session-date {
+      color: #bd93f9;
+      font-size: 0.8rem;
+      opacity: 0.8;
+    }
+    
+    /* Achievements Section */
+    .achievements-section {
+      margin-top: 25px;
+    }
+    
+    .achievements-section h3 {
+      color: #64ffda;
+      font-size: 1.1rem;
+      margin-bottom: 12px;
+      text-align: left;
+      padding-left: 8px;
+    }
+    
+    .achievements-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    
+    .achievement-card {
+      background: rgba(15, 25, 45, 0.5);
+      border-radius: 8px;
+      padding: 12px;
+      border: 1px solid rgba(100, 255, 218, 0.1);
+      text-align: center;
+      min-height: 100px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    
+    .achievement-card.locked {
+      opacity: 0.5;
+      filter: grayscale(80%);
+    }
+    
+    .achievement-icon {
+      font-size: 1.8rem;
+      margin-bottom: 8px;
+      color: #ffb86c;
+    }
+    
+    .achievement-name {
+      font-weight: 500;
+      color: #8be9fd;
+      font-size: 0.85rem;
+      margin-bottom: 4px;
+    }
+    
+    .achievement-date {
+      font-size: 0.7rem;
+      color: #bd93f9;
+    }
+    
+    /* Empty State */
+    .empty-state {
+      padding: 20px;
+      color: #6272a4;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+    
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: rgba(10, 20, 40, 0.5);
+      border-radius: 3px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: rgba(100, 255, 218, 0.3);
+      border-radius: 3px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(100, 255, 218, 0.5);
+    }
+  </style>
+
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#0a0e17">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="NeuroSufi">
+  <meta name="description" content="NeuroSufi MVP Demo - A breathwork app for mindfulness and meditation with progress tracking">
+
+  <!-- Manifest and Icons -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
+</head>
+<body>
+  <div class="container">
+    <!-- Breath Tab Content -->
+    <div class="tab-content active" id="breathTab">
+      <div class="header">
+        <h1>Neurosufi Breath</h1>
+        <div class="progress-tracker">
+          <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+          </div>
+          <div class="motivation-message" id="motivationMessage"></div>
+        </div>
+      </div>
+
+      <div class="breathing-section">
+        <canvas id="breathCanvas"></canvas>
+        <div class="phase-info">
+          <div id="phase">Ready to begin</div>
+          <div id="counter"></div>
+          <div id="progress-text"></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="startBtn">Start</button>
+        <button id="pauseBtn">Pause</button>
+        <button id="resetBtn">Reset</button>
+      </div>
+
+      <div class="audio-controls">
+        <button id="muteBtn">🔊</button>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-header" onclick="toggleSettings()">
+          <h2>Settings & Presets</h2>
+          <span class="toggle-icon">▼</span>
+        </div>
+        <div class="settings-content" id="settingsContent">
+          <div class="settings-grid">
+            <div class="setting-group">
+              <label for="rounds">Rounds:</label>
+              <input type="number" id="rounds" value="3" min="1" max="10">
+            </div>
+            <div class="setting-group">
+              <label for="breaths">Breaths/round:</label>
+              <input type="number" id="breaths" value="11" min="1" max="50">
+            </div>
+            <div class="setting-group">
+              <label for="inhale">Inhale (s):</label>
+              <input type="number" id="inhale" value="1" min="1" max="10">
+            </div>
+            <div class="setting-group">
+              <label for="exhale">Exhale (s):</label>
+              <input type="number" id="exhale" value="1" min="1" max="10">
+            </div>
+            <div class="setting-group full-width">
+              <label for="hold">Hold time (s):</label>
+              <input type="number" id="hold" value="20" min="5" max="120">
+            </div>
+          </div>
+          
+          <div class="presets">
+            <button onclick="applyPreset('default')">🔄 DEFAULT</button>
+            <button onclick="applyPreset('energize')">⚡ ENERGY</button>
+            <button onclick="applyPreset('whiskey')">🌙 WHISKEY</button>
+            <button onclick="applyPreset('slow')">🧘 DEEP</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tracker Tab Content -->
+    <div class="tab-content" id="trackerTab">
+      <div class="tracker-section">
+        <div class="tracker-header">
+          <h2>Breath Tracker</h2>
+          <div class="tracker-subtitle">Monitor your progress and achievements</div>
+        </div>
+        
+        <div class="time-period-selector">
+          <button class="time-period-btn active" onclick="filterSessions('today')">Today</button>
+          <button class="time-period-btn" onclick="filterSessions('week')">This Week</button>
+          <button class="time-period-btn" onclick="filterSessions('month')">This Month</button>
+          <button class="time-period-btn" onclick="filterSessions('year')">This Year</button>
+          <button class="time-period-btn" onclick="filterSessions('all')">Lifetime</button>
+        </div>
+        
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-number" id="totalSessions">0</div>
+            <div class="stat-label">Sessions</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="totalMinutes">0</div>
+            <div class="stat-label">Minutes</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="currentStreak">0</div>
+            <div class="stat-label">Day Streak</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="totalBreaths">0</div>
+            <div class="stat-label">Total Breaths</div>
+          </div>
+        </div>
+        
+        <div class="session-history">
+          <h3>Recent Sessions</h3>
+          <div class="session-list" id="sessionList">
+            <!-- Sessions will be inserted here by JavaScript -->
+          </div>
+        </div>
+        
+        <div class="achievements-section">
+          <h3>Achievements</h3>
+          <div class="achievements-grid" id="achievementsGrid">
+            <!-- Achievements will be inserted here by JavaScript -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Tab Bar -->
+  <div class="bottom-tab-bar">
+    <button class="tab-item active" onclick="switchTab('breath')" id="breathTabBtn">
+      <div class="tab-icon">🫁</div>
+      <div class="tab-label">Breath</div>
+    </button>
+    <button class="tab-item" onclick="switchTab('tracker')" id="trackerTabBtn">
+      <div class="tab-icon">📈</div>
+      <div class="tab-label">Tracker</div>
+    </button>
+  </div>
+
+  <script>
+    // Main app variables
+    const canvas = document.getElementById("breathCanvas");
+    const ctx = canvas.getContext("2d");
+    const phaseEl = document.getElementById("phase");
+    const counterEl = document.getElementById("counter");
+    const progressTextEl = document.getElementById("progress-text");
+    const startBtn = document.getElementById("startBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const progressBar = document.getElementById("progressBar");
+    const motivationMessage = document.getElementById("motivationMessage");
+    const muteBtn = document.getElementById("muteBtn");
+
+    const roundsInput = document.getElementById("rounds");
+    const breathsInput = document.getElementById("breaths");
+    const inhaleInput = document.getElementById("inhale");
+    const exhaleInput = document.getElementById("exhale");
+    const holdInput = document.getElementById("hold");
+
+    let isRunning = false, requestId, currentRound = 1, currentBreath = 1, currentPhase = "ready";
+    let phaseStartTime, phaseDuration;
+    let audioContext, audioEnabled = true;
+    
+    // Preset names mapping
+    const presetNames = {
+      'default': 'Default',
+      'energize': 'Energy Boost',
+      'whiskey': 'Whiskey Breath',
+      'slow': 'Deep'
+    };
+    
+    // Achievement definitions
+    const achievements = [
+      {
+        id: 'calm_champ',
+        name: 'Calm Champ',
+        description: 'Complete 3 Default rounds in 1 day',
+        icon: '🧘',
+        check: (sessions) => {
+          const today = new Date().toDateString();
+          const todaySessions = sessions.filter(s => new Date(s.timestamp).toDateString() === today && s.preset === 'default');
+          return todaySessions.length >= 3;
+        }
+      },
+      {
+        id: 'energy_hero',
+        name: 'Energy Hero',
+        description: 'Complete 3 Energy Boost rounds in 1 day',
+        icon: '⚡',
+        check: (sessions) => {
+          const today = new Date().toDateString();
+          const todaySessions = sessions.filter(s => new Date(s.timestamp).toDateString() === today && s.preset === 'energize');
+          return todaySessions.length >= 3;
+        }
+      },
+      {
+        id: 'focus_ninja',
+        name: 'Focus Ninja',
+        description: 'Complete 2 Whiskey Breath rounds in 1 day',
+        icon: '🎯',
+        check: (sessions) => {
+          const today = new Date().toDateString();
+          const todaySessions = sessions.filter(s => new Date(s.timestamp).toDateString() === today && s.preset === 'whiskey');
+          return todaySessions.length >= 2;
+        }
+      },
+      {
+        id: 'deep_diver',
+        name: 'Deep Diver',
+        description: 'Complete 2 Deep rounds in 1 day',
+        icon: '🌊',
+        check: (sessions) => {
+          const today = new Date().toDateString();
+          const todaySessions = sessions.filter(s => new Date(s.timestamp).toDateString() === today && s.preset === 'slow');
+          return todaySessions.length >= 2;
+        }
+      },
+      {
+        id: 'mood_boss',
+        name: 'Mood Boss',
+        description: 'Complete 1+ session per day for 5 consecutive days',
+        icon: '😎',
+        check: (sessions) => {
+          if (sessions.length < 5) return false;
+          
+          // Get unique days with sessions
+          const days = [...new Set(sessions.map(s => new Date(s.timestamp).toDateString()))]
+            .sort((a, b) => new Date(a) - new Date(b));
+          
+          // Check for 5 consecutive days
+          for (let i = 0; i <= days.length - 5; i++) {
+            const currentDate = new Date(days[i]);
+            const nextDate1 = new Date(days[i+1]);
+            const nextDate2 = new Date(days[i+2]);
+            const nextDate3 = new Date(days[i+3]);
+            const nextDate4 = new Date(days[i+4]);
+            
+            if (
+              nextDate1 - currentDate === 86400000 &&
+              nextDate2 - nextDate1 === 86400000 &&
+              nextDate3 - nextDate2 === 86400000 &&
+              nextDate4 - nextDate3 === 86400000
+            ) {
+              return true;
+            }
+          }
+          return false;
+        }
+      },
+      {
+        id: 'neurosufi_hacker',
+        name: 'NeuroSufi Hacker',
+        description: 'Use all 4 presets in 1 day',
+        icon: '🧙',
+        check: (sessions) => {
+          const today = new Date().toDateString();
+          const todaySessions = sessions.filter(s => new Date(s.timestamp).toDateString() === today);
+          const usedPresets = new Set(todaySessions.map(s => s.preset));
+          return usedPresets.size === 4;
+        }
+      }
+    ];
+    
+    // Initialize session data from localStorage
+    function initSessionData() {
+      if (!localStorage.getItem('breathSessions')) {
+        localStorage.setItem('breathSessions', JSON.stringify([]));
+      }
+      if (!localStorage.getItem('achievements')) {
+        localStorage.setItem('achievements', JSON.stringify([]));
+      }
+    }
+    
+    // Save a session to localStorage
+    function saveSession(preset, rounds) {
+      const sessions = JSON.parse(localStorage.getItem('breathSessions'));
+      sessions.push({
+        preset: preset,
+        rounds: rounds,
+        timestamp: new Date().toISOString()
+      });
+      localStorage.setItem('breathSessions', JSON.stringify(sessions));
+      
+      // Check for new achievements
+      checkAchievements(sessions);
+    }
+    
+    // Check for unlocked achievements
+    function checkAchievements(sessions) {
+      const unlockedAchievements = JSON.parse(localStorage.getItem('achievements'));
+      const newAchievements = [];
+      
+      achievements.forEach(achievement => {
+        // Skip if already unlocked
+        if (unlockedAchievements.some(a => a.id === achievement.id)) return;
+        
+        // Check if achievement is earned
+        if (achievement.check(sessions)) {
+          const achievementData = {
+            id: achievement.id,
+            name: achievement.name,
+            date: new Date().toISOString()
+          };
+          unlockedAchievements.push(achievementData);
+          newAchievements.push(achievementData);
+        }
+      });
+      
+      if (newAchievements.length > 0) {
+        localStorage.setItem('achievements', JSON.stringify(unlockedAchievements));
+        // Show notification for new achievements
+        showAchievementNotification(newAchievements);
+      }
+    }
+    
+    // Show achievement notification
+    function showAchievementNotification(achievements) {
+      // In a real app, you might want to show a more prominent notification
+      alert(`🎉 Achievement Unlocked: ${achievements.map(a => a.name).join(', ')}`);
+    }
+    
+    // Filter sessions by time period
+    function filterSessions(period) {
+      // Update active button
+      document.querySelectorAll('.time-period-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.classList.add('active');
+      
+      const sessions = JSON.parse(localStorage.getItem('breathSessions')) || [];
+      const now = new Date();
+      let filteredSessions = [];
+      
+      switch (period) {
+        case 'today':
+          filteredSessions = sessions.filter(s => {
+            const sessionDate = new Date(s.timestamp);
+            return sessionDate.toDateString() === now.toDateString();
+          });
+          break;
+        case 'week':
+          const weekStart = new Date(now);
+          weekStart.setDate(now.getDate() - now.getDay()); // Start of current week (Sunday)
+          filteredSessions = sessions.filter(s => new Date(s.timestamp) >= weekStart);
+          break;
+        case 'month':
+          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+          filteredSessions = sessions.filter(s => new Date(s.timestamp) >= monthStart);
+          break;
+        case 'year':
+          const yearStart = new Date(now.getFullYear(), 0, 1);
+          filteredSessions = sessions.filter(s => new Date(s.timestamp) >= yearStart);
+          break;
+        case 'all':
+          filteredSessions = [...sessions];
+          break;
+      }
+      
+      updateSessionStats(filteredSessions);
+      displaySessions(filteredSessions);
+    }
+    
+    // Calculate and update session statistics
+    function updateSessionStats(sessions) {
+      const totalSessions = sessions.length;
+      const totalBreaths = sessions.reduce((sum, session) => sum + session.rounds * 11, 0); // Assuming 11 breaths per round
+      
+      // Calculate total minutes (simplified - in reality you'd calculate based on actual session duration)
+      const totalMinutes = Math.floor(totalSessions * 5); // Approx 5 minutes per session
+      
+      // Calculate streak
+      let streak = 0;
+      if (sessions.length > 0) {
+        const sortedSessions = [...sessions].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        const uniqueDays = [...new Set(sortedSessions.map(s => new Date(s.timestamp).toDateString()))];
+        
+        let currentStreak = 0;
+        let currentDate = new Date();
+        
+        // Check if today has a session
+        if (uniqueDays.includes(currentDate.toDateString())) {
+          currentStreak = 1;
+          currentDate.setDate(currentDate.getDate() - 1);
+          
+          // Check previous days
+          while (true) {
+            const prevDateStr = currentDate.toDateString();
+            if (uniqueDays.includes(prevDateStr)) {
+              currentStreak++;
+              currentDate.setDate(currentDate.getDate() - 1);
+            } else {
+              break;
+            }
+          }
+        }
+        
+        streak = currentStreak;
+      }
+      
+      // Update UI
+      document.getElementById('totalSessions').textContent = totalSessions;
+      document.getElementById('totalMinutes').textContent = totalMinutes;
+      document.getElementById('currentStreak').textContent = streak;
+      document.getElementById('totalBreaths').textContent = totalBreaths;
+    }
+    
+    // Display sessions in the list
+    function displaySessions(sessions) {
+      const sessionList = document.getElementById('sessionList');
+      sessionList.innerHTML = '';
+      
+      if (sessions.length === 0) {
+        sessionList.innerHTML = '<div class="empty-state">No sessions found for this period</div>';
+        return;
+      }
+      
+      // Sort by most recent first
+      const sortedSessions = [...sessions].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      
+      sortedSessions.forEach(session => {
+        const sessionDate = new Date(session.timestamp);
+        const timeString = sessionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const dateString = sessionDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+        
+        const sessionItem = document.createElement('div');
+        sessionItem.className = 'session-item';
+        sessionItem.innerHTML = `
+          <div>
+            <span class="session-preset">${presetNames[session.preset] || 'Custom'}</span>
+            <span class="session-details">${session.rounds} rounds • ${session.rounds * 11} breaths</span>
+          </div>
+          <div>
+            <span class="session-time">${timeString}</span>
+            <span class="session-date">${dateString}</span>
+          </div>
+        `;
+        sessionList.appendChild(sessionItem);
+      });
+    }
+    
+    // Display achievements
+    function displayAchievements() {
+      const achievementsGrid = document.getElementById('achievementsGrid');
+      achievementsGrid.innerHTML = '';
+      
+      const unlockedAchievements = JSON.parse(localStorage.getItem('achievements')) || [];
+      
+      achievements.forEach(achievement => {
+        const isUnlocked = unlockedAchievements.some(a => a.id === achievement.id);
+        const achievementDate = isUnlocked 
+          ? unlockedAchievements.find(a => a.id === achievement.id).date 
+          : null;
+        
+        const achievementCard = document.createElement('div');
+        achievementCard.className = `achievement-card ${isUnlocked ? '' : 'locked'}`;
+        achievementCard.innerHTML = `
+          <div>
+            <div class="achievement-icon">${achievement.icon}</div>
+            <div class="achievement-name">${achievement.name}</div>
+          </div>
+          ${isUnlocked 
+            ? `<div class="achievement-date">${new Date(achievementDate).toLocaleDateString()}</div>` 
+            : `<div class="achievement-date">Locked</div>`}
+        `;
+        
+        // Add tooltip for description
+        achievementCard.title = achievement.description;
+        achievementsGrid.appendChild(achievementCard);
+      });
+    }
+    
+    // Tab switching functionality
+    function switchTab(tabName) {
+      // Hide all tab contents
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      
+      // Remove active class from all tab buttons
+      document.querySelectorAll('.tab-item').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      // Show selected tab content
+      if (tabName === 'breath') {
+        document.getElementById('breathTab').classList.add('active');
+        document.getElementById('breathTabBtn').classList.add('active');
+        // Resize canvas when switching back to breath tab
+        setTimeout(resizeCanvas, 100);
+      } else if (tabName === 'tracker') {
+        document.getElementById('trackerTab').classList.add('active');
+        document.getElementById('trackerTabBtn').classList.add('active');
+        // Load and display tracker data
+        filterSessions('today');
+        displayAchievements();
+      }
+    }
+    
+    // Set canvas size based on current dimensions
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+    }
+    
+    // Initialize canvas size
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    
+    // Settings toggle functionality
+    function toggleSettings() {
+      const content = document.getElementById('settingsContent');
+      const icon = document.querySelector('.toggle-icon');
+      
+      if (content.classList.contains('expanded')) {
+        content.classList.remove('expanded');
+        icon.style.transform = 'rotate(0deg)';
+      } else {
+        content.classList.add('expanded');
+        icon.style.transform = 'rotate(180deg)';
+      }
+    }
+    
+    // Initialize audio context
+    function initAudio() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    // Audio functions
+    function playBeep(frequency, duration = 300) {
+      if (!audioContext || !audioEnabled) return;
+      
+      try {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.value = frequency;
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        gainNode.gain.value = 0.2;
+        
+        const now = audioContext.currentTime;
+        oscillator.start(now);
+        
+        gainNode.gain.setValueAtTime(0.2, now);
+        gainNode.gain.linearRampToValueAtTime(0, now + duration/1000);
+        
+        oscillator.stop(now + duration/1000);
+        
+        setTimeout(() => {
+          oscillator.disconnect();
+          gainNode.disconnect();
+        }, duration + 50);
+      } catch (error) {
+        console.error("Audio error:", error);
+      }
+    }
+
+    function playPhaseSound(phase) {
+      switch(phase) {
+        case "inhale":
+          playBeep(440);
+          break;
+        case "exhale":
+          playBeep(349.23);
+          break;
+        case "hold":
+          playBeep(261.63);
+          break;
+        case "complete":
+          setTimeout(() => playBeep(523.25, 200), 0);
+          setTimeout(() => playBeep(659.25, 200), 250);
+          setTimeout(() => playBeep(783.99, 300), 500);
+          break;
+      }
+    }
+
+    function toggleMute() {
+      audioEnabled = !audioEnabled;
+      muteBtn.textContent = audioEnabled ? "🔊" : "🔇";
+      
+      if (audioEnabled && !audioContext) {
+        initAudio();
+      }
+    }
+
+    function drawCircle(size) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.beginPath();
+      ctx.arc(canvas.width / 2, canvas.height / 2, size, 0, 2 * Math.PI);
+      
+      const gradient = ctx.createRadialGradient(
+        canvas.width / 2, canvas.height / 2, size * 0.8,
+        canvas.width / 2, canvas.height / 2, size
+      );
+      
+      if (currentPhase === "inhale") {
+        gradient.addColorStop(0, "rgba(100, 255, 218, 0.7)");
+        gradient.addColorStop(1, "rgba(100, 255, 218, 0.3)");
+      } else if (currentPhase === "exhale") {
+        gradient.addColorStop(0, "rgba(189, 147, 249, 0.7)");
+        gradient.addColorStop(1, "rgba(189, 147, 249, 0.3)");
+      } else if (currentPhase === "hold") {
+        gradient.addColorStop(0, "rgba(255, 184, 108, 0.7)");
+        gradient.addColorStop(1, "rgba(255, 184, 108, 0.3)");
+      } else {
+        gradient.addColorStop(0, "rgba(100, 255, 218, 0.5)");
+        gradient.addColorStop(1, "rgba(100, 255, 218, 0.2)");
+      }
+      
+      ctx.fillStyle = gradient;
+      ctx.fill();
+      
+      ctx.shadowColor = currentPhase === "inhale" ? "#64ffda" : 
+                        currentPhase === "exhale" ? "#bd93f9" : 
+                        currentPhase === "hold" ? "#ffb86c" : "#64ffda";
+      ctx.shadowBlur = 15;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+    }
+
+    function applyPreset(type) {
+      if (type === "default") {
+        roundsInput.value = 3;
+        breathsInput.value = 11;
+        inhaleInput.value = 1;
+        exhaleInput.value = 1;
+        holdInput.value = 20;
+      }
+      if (type === "energize") {
+        roundsInput.value = 3;
+        breathsInput.value = 11;
+        inhaleInput.value = 1;
+        exhaleInput.value = 1;
+        holdInput.value = 60;
+      }
+      if (type === "whiskey") { 
+        roundsInput.value = 3;
+        breathsInput.value = 11;
+        inhaleInput.value = 4; 
+        exhaleInput.value = 8; 
+        holdInput.value = 10; 
+      }
+      if (type === "slow") { 
+        roundsInput.value = 3;
+        breathsInput.value = 11;
+        inhaleInput.value = 2; 
+        exhaleInput.value = 2; 
+        holdInput.value = 20;
+      }
+      
+      // Return the preset type for tracking
+      return type;
+    }
+
+    function updateUI(phase, timeLeft) {
+      phaseEl.textContent = phase.toUpperCase();
+      counterEl.textContent = timeLeft > 0 ? `${timeLeft}s` : "";
+      
+      if (phase === "hold") {
+        progressTextEl.textContent = `Round ${currentRound}/${roundsInput.value} • Hold`;
+      } else if (phase === "complete") {
+        progressTextEl.textContent = "Session Complete!";
+      } else {
+        progressTextEl.textContent = `Round ${currentRound}/${roundsInput.value} • Breath ${currentBreath}/${breathsInput.value}`;
+      }
+    }
+
+    function updateProgress(rounds, breaths) {
+      const roundProgress = (currentRound - 1);
+      const breathProgress = (currentBreath - 1) / breaths;
+      const totalProgress = ((roundProgress + breathProgress / breaths) / rounds) * 100;
+      progressBar.style.width = totalProgress + "%";
+      
+      if (totalProgress > 75) {
+        motivationMessage.textContent = "Almost there! Amazing!";
+      } else if (totalProgress > 50) {
+        motivationMessage.textContent = "Halfway! Keep going!";
+      } else if (totalProgress > 25) {
+        motivationMessage.textContent = "Great rhythm!";
+      } else if (totalProgress > 0) {
+        motivationMessage.textContent = "Perfect breathing!";
+      }
+    }
+
+    function startBreathing() {
+      if (isRunning) return;
+      
+      initAudio();
+      
+      if (audioContext && audioContext.state === "suspended") {
+        audioContext.resume();
+      }
+      
+      // Hide settings when breathing starts
+      const content = document.getElementById('settingsContent');
+      const icon = document.querySelector('.toggle-icon');
+      content.classList.remove('expanded');
+      icon.style.transform = 'rotate(0deg)';
+      
+      isRunning = true;
+
+      const rounds = +roundsInput.value, breaths = +breathsInput.value;
+      const inhale = +inhaleInput.value, exhale = +exhaleInput.value, hold = +holdInput.value;
+
+      currentRound = 1;
+      currentBreath = 1;
+      currentPhase = "inhale";
+      phaseStartTime = Date.now();
+      phaseDuration = inhale;
+      
+      playPhaseSound("inhale");
+
+      function loop() {
+        if (!isRunning) return;
+        const now = Date.now(), elapsed = (now - phaseStartTime) / 1000;
+        const remaining = Math.ceil(phaseDuration - elapsed);
+        updateUI(currentPhase, remaining);
+
+        const baseSize = Math.min(canvas.width, canvas.height) * 0.25;
+        let size = baseSize;
+        if (currentPhase === "inhale") size = baseSize + baseSize * 0.4 * (elapsed / phaseDuration);
+        else if (currentPhase === "exhale") size = baseSize * 1.4 - baseSize * 0.4 * (elapsed / phaseDuration);
+        else if (currentPhase === "hold") size = baseSize * 1.3 + baseSize * 0.1 * Math.sin(elapsed * 2);
+        drawCircle(size);
+
+        if (elapsed >= phaseDuration) {
+          if (currentPhase === "inhale") {
+            currentPhase = "exhale";
+            phaseDuration = exhale;
+            playPhaseSound("exhale");
+          } else if (currentPhase === "exhale") {
+            currentBreath++;
+            if (currentBreath <= breaths) {
+              currentPhase = "inhale";
+              phaseDuration = inhale;
+              playPhaseSound("inhale");
+            } else {
+              currentPhase = "hold";
+              phaseDuration = hold;
+              playPhaseSound("hold");
+            }
+          } else if (currentPhase === "hold") {
+            if (currentRound < rounds) {
+              currentRound++;
+              currentBreath = 1;
+              currentPhase = "inhale";
+              phaseDuration = inhale;
+              playPhaseSound("inhale");
+            } else {
+              stopBreathing();
+              currentPhase = "complete";
+              updateUI("complete", 0);
+              progressBar.style.width = "100%";
+              motivationMessage.textContent = "Excellent work!";
+              playPhaseSound("complete");
+              
+              // Determine which preset was used (if any)
+              let presetUsed = 'custom';
+              const currentSettings = {
+                rounds: roundsInput.value,
+                breaths: breathsInput.value,
+                inhale: inhaleInput.value,
+                exhale: exhaleInput.value,
+                hold: holdInput.value
+              };
+              
+              // Check against presets
+              if (currentSettings.rounds == 3 && currentSettings.breaths == 11 && 
+                  currentSettings.inhale == 1 && currentSettings.exhale == 1 && 
+                  currentSettings.hold == 20) {
+                presetUsed = 'default';
+              } else if (currentSettings.rounds == 3 && currentSettings.breaths == 11 && 
+                         currentSettings.inhale == 1 && currentSettings.exhale == 1 && 
+                         currentSettings.hold == 60) {
+                presetUsed = 'energize';
+              } else if (currentSettings.rounds == 3 && currentSettings.breaths == 11 && 
+                         currentSettings.inhale == 4 && currentSettings.exhale == 8 && 
+                         currentSettings.hold == 10) {
+                presetUsed = 'whiskey';
+              } else if (currentSettings.rounds == 3 && currentSettings.breaths == 11 && 
+                         currentSettings.inhale == 2 && currentSettings.exhale == 2 && 
+                         currentSettings.hold == 20) {
+                presetUsed = 'slow';
+              }
+              
+              // Save the session
+              saveSession(presetUsed, rounds);
+              
+              return;
+            }
+          }
+          phaseStartTime = now;
+        }
+
+        updateProgress(rounds, breaths);
+        requestId = requestAnimationFrame(loop);
+      }
+
+      updateProgress(rounds, breaths);
+      startBtn.style.display = "none";
+      pauseBtn.style.display = "inline-block";
+      loop();
+    }
+
+    function pauseBreathing() {
+      if (!isRunning) {
+        isRunning = true;
+        phaseStartTime = Date.now() - (phaseDuration - parseInt(counterEl.textContent || "0")) * 1000;
+        pauseBtn.textContent = "Pause";
+        requestAnimationFrame(loop);
+      } else {
+        isRunning = false;
+        cancelAnimationFrame(requestId);
+        pauseBtn.textContent = "Resume";
+      }
+    }
+
+    function stopBreathing() {
+      isRunning = false;
+      cancelAnimationFrame(requestId);
+      const baseSize = Math.min(canvas.width, canvas.height) * 0.25;
+      drawCircle(baseSize);
+      startBtn.style.display = "inline-block";
+      pauseBtn.style.display = "none";
+      pauseBtn.textContent = "Pause";
+      progressTextEl.textContent = "";
+      phaseEl.textContent = "Ready to begin";
+      counterEl.textContent = "";
+      motivationMessage.textContent = "";
+      progressBar.style.width = "0%";
+      currentPhase = "ready";
+    }
+
+    // Initialize the app
+    function initApp() {
+      initSessionData();
+      resizeCanvas();
+      
+      // Draw initial circle
+      const baseSize = Math.min(canvas.width, canvas.height) * 0.25;
+      drawCircle(baseSize);
+    }
+
+    // Event listeners
+    startBtn.addEventListener("click", startBreathing);
+    pauseBtn.addEventListener("click", pauseBreathing);
+    resetBtn.addEventListener("click", stopBreathing);
+    muteBtn.addEventListener("click", toggleMute);
+
+    // Initialize the app when DOM is loaded
+    document.addEventListener('DOMContentLoaded', initApp);
+  </script>
+
+  <script>
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(registration => {
+            console.log('ServiceWorker registered with scope:', registration.scope);
+          })
+          .catch(err => {
+            console.error('ServiceWorker registration failed:', err);
+          });
+      });
+    }
+  </script>
+
+</body>
+</html>
